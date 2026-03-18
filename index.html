@@ -3,30 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dividend Calculator</title>
+    <title>Dividend Capture Pro</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        input[type='number'] {
+            margin: 5px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
 </head>
 <body>
-    <h1>Dividend Calculator</h1>
-    <form id="calculator">
-        <label for="amount">Investment Amount:</label>
-        <input type="number" id="amount" required>
-
-        <label for="dividend">Dividend Yield (%):</label>
-        <input type="number" id="dividend" required>
-
-        <button type="submit">Calculate</button>
-    </form>
-
-    <h2 id="result"></h2>
-
+    <h1>Dividend Capture Pro</h1>
+    <label for="investment">Investment Amount:</label>
+    <input type="number" id="investment" placeholder="Enter amount" />
+    <label for="dividendYield">Dividend Yield (%):</label>
+    <input type="number" id="dividendYield" placeholder="Enter yield" />
+    <button id="calculateBtn">Calculate</button>
+    <h2>Dividend Income: <span id="income"></span></h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Investment</th>
+                <th>Dividend Yield</th>
+                <th>Dividend Income</th>
+            </tr>
+        </thead>
+        <tbody id="incomeTable">
+        </tbody>
+    </table>
     <script>
-        document.getElementById('calculator').onsubmit = function(event) {
-            event.preventDefault();
-            const amount = parseFloat(document.getElementById('amount').value);
-            const dividend = parseFloat(document.getElementById('dividend').value);
-            const result = (amount * (dividend / 100)).toFixed(2);
-            document.getElementById('result').innerText = `Your annual dividend income: $${result}`;
-        };
+        document.getElementById('calculateBtn').addEventListener('click', function() {
+            const investment = parseFloat(document.getElementById('investment').value);
+            const dividendYield = parseFloat(document.getElementById('dividendYield').value) / 100;
+            const income = investment * dividendYield;
+            document.getElementById('income').innerText = '$' + income.toFixed(2);
+            const row = document.createElement('tr');
+            row.innerHTML = `<td>$${investment.toFixed(2)}</td><td>${(dividendYield * 100).toFixed(2)}%</td><td>$${income.toFixed(2)}</td>`;
+            document.getElementById('incomeTable').appendChild(row);
+        });
     </script>
 </body>
 </html>
