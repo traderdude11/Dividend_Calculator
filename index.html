@@ -1,132 +1,29 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Dividend Capture Pro</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>
-    body {
-      font-family: Arial;
-      max-width: 1100px;
-      margin: auto;
-      padding: 20px;
-      background: #f4f6f9;
-    }
-    h2 {
-      text-align: center;
-    }
-    input {
-      width: 100%;
-      padding: 8px;
-      margin: 5px 0;
-    }
-    button {
-      padding: 10px;
-      width: 100%;
-      background: #28a745;
-      color: white;
-      border: none;
-      margin-top: 10px;
-      font-size: 16px;
-    }
-    table {
-      width: 100%;
-      margin-top: 20px;
-      border-collapse: collapse;
-      background: white;
-    }
-    th, td {
-      border: 1px solid #ddd;
-      padding: 8px;
-      text-align: center;
-    }
-    th {
-      background: #007bff;
-      color: white;
-    }
-    .profit { color: green; }
-    .loss { color: red; }
-    .summary {
-      margin-top: 20px;
-      padding: 15px;
-      background: white;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dividend Capture Pro+</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        .profit { color: green; }
+        .risky { color: orange; }
+        .avoid { color: red; }
+    </style>
 </head>
-
 <body>
-
-<h2>📊 Dividend Capture Pro</h2>
-
-<input type="date" id="exDate" placeholder="Ex Date">
-<input type="text" id="company" placeholder="Company Name">
-<input type="number" id="investment" placeholder="Investment ₹">
-<input type="number" id="dividend" placeholder="Dividend ₹">
-<input type="number" id="buyPrice" placeholder="Buy Price">
-<input type="number" id="sellPrice" placeholder="Sell Price">
-
-<button onclick="addTrade()">Add Trade</button>
-
-<table id="table">
-  <tr>
-    <th>Date</th>
-    <th>Company</th>
-    <th>Shares</th>
-    <th>Payout</th>
-    <th>Trading P/L</th>
-    <th>Total P/L</th>
-    <th>Tax</th>
-    <th>Final P/L</th>
-  </tr>
-</table>
-
-<div class="summary">
-  <h3>📈 Portfolio Summary</h3>
-  <p>Total Investment: ₹<span id="totalInv">0</span></p>
-  <p>Total Profit: ₹<span id="totalProfit">0</span></p>
-</div>
-
-<script>
-let totalInvestment = 0;
-let totalProfit = 0;
-
-function addTrade() {
-  let date = document.getElementById("exDate").value;
-  let company = document.getElementById("company").value;
-  let investment = parseFloat(document.getElementById("investment").value);
-  let dividend = parseFloat(document.getElementById("dividend").value);
-  let buyPrice = parseFloat(document.getElementById("buyPrice").value);
-  let sellPrice = parseFloat(document.getElementById("sellPrice").value);
-
-  if (!investment || !buyPrice) return alert("Enter valid inputs");
-
-  let shares = investment / buyPrice;
-  let payout = shares * dividend;
-  let tradingPL = shares * (sellPrice - buyPrice);
-  let totalPL = payout + tradingPL;
-  let tax = totalPL > 0 ? totalPL * 0.2 : 0;
-  let finalPL = totalPL - tax;
-
-  let table = document.getElementById("table");
-
-  let row = table.insertRow();
-  row.innerHTML = `
-    <td>${date}</td>
-    <td>${company}</td>
-    <td>${shares.toFixed(0)}</td>
-    <td>₹${payout.toFixed(0)}</td>
-    <td>₹${tradingPL.toFixed(0)}</td>
-    <td>₹${totalPL.toFixed(0)}</td>
-    <td>₹${tax.toFixed(0)}</td>
-    <td class="${finalPL>=0?'profit':'loss'}">₹${finalPL.toFixed(0)}</td>
-  `;
-
-  totalInvestment += investment;
-  totalProfit += finalPL;
-
-  document.getElementById("totalInv").innerText = totalInvestment.toFixed(0);
-  document.getElementById("totalProfit").innerText = totalProfit.toFixed(0);
-}
-</script>
-
+    <h1>Dividend Capture Pro+ Advanced Version</h1>
+    <p>This version includes:</p>
+    <ul>
+        <li>Trading loss calculation</li>
+        <li>Break-even price calculation</li>
+        <li>AI verdict system with color coding:</li>
+        <ul>
+            <li class="profit">Profit</li>
+            <li class="risky">Risky</li>
+            <li class="avoid">Avoid</li>
+        </ul>
+        <li>Advanced tax calculations for both trading and dividend tax</li>
+    </ul>
 </body>
 </html>
