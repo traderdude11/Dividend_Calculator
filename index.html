@@ -71,7 +71,7 @@
     <th>Company</th>
     <th>Shares</th>
     <th>Dividend</th>
-    <th>Trading Loss</th>
+    <th>Trading P/L</th>
     <th>Total Tax</th>
     <th>Break-even Price</th>
     <th>Verdict</th>
@@ -100,22 +100,30 @@ function addTrade() {
   if (!investment || !buyPrice) return alert("Enter valid inputs");
 
   let shares = investment / buyPrice;
+
+  // Dividend payout
   let payout = shares * dividend;
-  let investmentBefore = shares * buyPrice;
-  let investmentAfter = shares * sellPrice;
-  let tradingPL = investmentBefore - investmentAfter;
-  
+
+  // ✅ CORRECTED TRADING LOGIC
+  let plPerShare = sellPrice - buyPrice;
+  let tradingPL = shares * (sellPrice - buyPrice);
+
+  // ✅ TAX CALCULATIONS
   let tradingTax = tradingPL > 0 ? tradingPL * 0.20 : 0;
   let dividendTax = payout * 0.30;
   let totalTax = tradingTax + dividendTax;
-  let totalPL = payout - tradingPL;
+
+  // ✅ TOTAL PROFIT
+  let totalPL = payout + tradingPL;
   let finalPL = totalPL - totalTax;
-  
+
+  // ✅ BREAK-EVEN SELL PRICE (after dividend tax)
   let breakEvenPrice = buyPrice - (dividend * (1 - 0.30));
 
+  // ✅ AI VERDICT
   let verdict = "";
   let verdictClass = "";
-  
+
   if (finalPL > 0) {
     verdict = "Profitable ✅";
     verdictClass = "profit";
@@ -128,24 +136,25 @@ function addTrade() {
   }
 
   let table = document.getElementById("table");
+
   let row = table.insertRow();
   row.innerHTML = `
     <td>${date}</td>
     <td>${company}</td>
-    <td>${shares.toFixed(2)}</td>
-    <td>₹${payout.toFixed(2)}</td>
-    <td>₹${tradingPL.toFixed(2)}</td>
-    <td>₹${totalTax.toFixed(2)}</td>
+    <td>${shares.toFixed(0)}</td>
+    <td>₹${payout.toFixed(0)}</td>
+    <td>₹${tradingPL.toFixed(0)}</td>
+    <td>₹${totalTax.toFixed(0)}</td>
     <td>₹${breakEvenPrice.toFixed(2)}</td>
     <td class="${verdictClass}">${verdict}</td>
-    <td class="${finalPL>=0?'profit':'loss'}">₹${finalPL.toFixed(2)}</td>
+    <td class="${finalPL>=0?'profit':'loss'}">₹${finalPL.toFixed(0)}</td>
   `;
 
   totalInvestment += investment;
   totalProfit += finalPL;
 
-  document.getElementById("totalInv").innerText = totalInvestment.toFixed(2);
-  document.getElementById("totalProfit").innerText = totalProfit.toFixed(2);
+  document.getElementById("totalInv").innerText = totalInvestment.toFixed(0);
+  document.getElementById("totalProfit").innerText = totalProfit.toFixed(0);
 }
 </script>
 
