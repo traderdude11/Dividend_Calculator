@@ -61,21 +61,20 @@
 <input type="number" id="investment" placeholder="Investment ₹">
 <input type="number" id="dividend" placeholder="Dividend ₹">
 <input type="number" id="buyPrice" placeholder="Buy Price">
-<input type="number" id="sellPrice" placeholder="Sell Price">
+<input type="number" id="sellPrice" placeholder="Sell Price (leave blank if not sold)">
 
 <button onclick="addTrade()">Add Trade</button>
 
 <table id="table">
   <tr>
-    <th>Date</th>
-    <th>Company</th>
-    <th>Shares</th>
-    <th>Dividend</th>
-    <th>Trading P/L</th>
-    <th>Total Tax</th>
-    <th>Break-even Price</th>
-    <th>Verdict</th>
-    <th>Final P/L</th>
+    <th title="Ex-Date of dividend">Date</th>
+    <th title="Company name">Company</th>
+    <th title="Shares = Investment / Buy Price">Shares</th>
+    <th title="Dividend = Shares × Dividend per share">Dividend</th>
+    <th title="Trading P/L = Shares × (Sell Price - Buy Price)">Trading P/L</th>
+    <th title="Tax = 20% on trading profit + 30% on dividend">Total Tax</th>
+    <th title="AI-based trade decision">Verdict</th>
+    <th title="Final Profit/Loss after tax">Final P/L</th>
   </tr>
 </table>
 
@@ -97,61 +96,74 @@ function addTrade() {
   let buyPrice = parseFloat(document.getElementById("buyPrice").value);
   let sellPrice = parseFloat(document.getElementById("sellPrice").value);
 
-  if (!investment || !buyPrice) return alert("Enter valid inputs");
+  if (!investment || !buyPrice) {
+    alert("Enter valid inputs");
+    return;
+  }
 
   let shares = investment / buyPrice;
-
-  // Dividend payout
   let payout = shares * dividend;
 
-  // ✅ CORRECTED TRADING LOGIC
-  let plPerShare = sellPrice - buyPrice;
-  let tradingPL = shares * (sellPrice - buyPrice);
+  let isSold = sellPrice && sellPrice > 0;
 
-  // ✅ TAX CALCULATIONS
-  let tradingTax = tradingPL > 0 ? tradingPL * 0.20 : 0;
-  let dividendTax = payout * 0.30;
-  let totalTax = tradingTax + dividendTax;
-
-  // ✅ TOTAL PROFIT
-  let totalPL = payout + tradingPL;
-  let finalPL = totalPL - totalTax;
-
-  // ✅ BREAK-EVEN SELL PRICE (after dividend tax)
-  let breakEvenPrice = buyPrice - (dividend * (1 - 0.30));
-
-  // ✅ AI VERDICT
-  let verdict = "";
+  let tradingPL = "NA";
+  let totalTax = 0;
+  let finalPL = "NA";
+  let verdict = "NA";
   let verdictClass = "";
 
-  if (finalPL > 0) {
-    verdict = "Profitable ✅";
-    verdictClass = "profit";
-  } else if (finalPL > -1000) {
-    verdict = "Risky ⚠️";
-    verdictClass = "warn";
+  if (isSold) {
+    // ✅ Trading profit
+    tradingPL = shares * (sellPrice - buyPrice);
+
+    // ✅ Taxes
+    let tradingTax = tradingPL > 0 ? tradingPL * 0.20 : 0;
+    let dividendTax = payout * 0.30;
+    totalTax = tradingTax + dividendTax;
+
+    let totalPL = payout + tradingPL;
+    finalPL = totalPL - totalTax;
+
+    // ✅ AI Verdict
+    if (finalPL > 0) {
+      verdict = "Profitable ✅";
+      verdictClass = "profit";
+    } else if (finalPL > -1000) {
+      verdict = "Risky ⚠️";
+      verdictClass = "warn";
+    } else {
+      verdict = "Avoid ❌";
+      verdictClass = "loss";
+    }
+
   } else {
-    verdict = "Avoid ❌";
-    verdictClass = "loss";
+    // ❌ NOT SOLD CASE
+    let dividendTax = payout * 0.30;
+    totalTax = dividendTax;
   }
 
   let table = document.getElementById("table");
 
   let row = table.insertRow();
   row.innerHTML = `
-    <td>${date}</td>
-    <td>${company}</td>
-    <td>${shares.toFixed(0)}</td>
-    <td>₹${payout.toFixed(0)}</td>
-    <td>₹${tradingPL.toFixed(0)}</td>
-    <td>₹${totalTax.toFixed(0)}</td>
-    <td>₹${breakEvenPrice.toFixed(2)}</td>
-    <td class="${verdictClass}">${verdict}</td>
-    <td class="${finalPL>=0?'profit':'loss'}">₹${finalPL.toFixed(0)}</td>
+    <td title="Ex-Date">${date}</td>
+    <td title="Company Name">${company}</td>
+    <td title="Shares = Investment / Buy Price">${shares.toFixed(0)}</td>
+    <td title="Dividend = Shares × Dividend">${payout.toFixed(0)}</td>
+    <td title="Trading P/L = Sell - Buy">
+      ${tradingPL === "NA" ? "NA" : "₹" + tradingPL.toFixed(0)}
+    </td>
+    <td title="Tax = Trading Tax + Dividend Tax">₹${totalTax.toFixed(0)}</td>
+    <td class="${verdictClass}" title="AI-based decision">${verdict}</td>
+    <td class="${finalPL!=="NA" && finalPL>=0?'profit':'loss'}" title="Final P/L after tax">
+      ${finalPL === "NA" ? "NA" : "₹" + finalPL.toFixed(0)}
+    </td>
   `;
 
   totalInvestment += investment;
-  totalProfit += finalPL;
+  if (finalPL !== "NA") {
+    totalProfit += finalPL;
+  }
 
   document.getElementById("totalInv").innerText = totalInvestment.toFixed(0);
   document.getElementById("totalProfit").innerText = totalProfit.toFixed(0);
