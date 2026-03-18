@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Dividend Capture Calculator</title>
+  <style>
+    body {
+      font-family: Arial;
+      max-width: 900px;
+      margin: auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    input {
+      width: 100%;
+      padding: 8px;
+      margin: 5px 0;
+    }
+    button {
+      padding: 10px;
+      width: 100%;
+      margin-top: 10px;
+      background: green;
+      color: white;
+      border: none;
+    }
+    table {
+      width: 100%;
+      margin-top: 20px;
+      background: white;
+      border-collapse: collapse;
+    }
+    td, th {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: center;
+    }
+  </style>
+</head>
+
+<body>
+
+<h2>📊 Dividend Capture Calculator</h2>
+
+<label>Company</label>
+<input type="text" id="company">
+
+<label>Investment (₹)</label>
+<input type="number" id="investment">
+
+<label>Dividend per Share (₹)</label>
+<input type="number" id="dividend">
+
+<label>Buy Price (Before Ex-Date)</label>
+<input type="number" id="buyPrice">
+
+<label>Sell Price (After Ex-Date)</label>
+<input type="number" id="sellPrice">
+
+<button onclick="calculate()">Calculate</button>
+
+<table id="resultTable" style="display:none;">
+  <tr>
+    <th>Shares</th>
+    <th>Payout</th>
+    <th>P/L Per Share</th>
+    <th>Trading P/L</th>
+    <th>Total P/L</th>
+    <th>Tax (20%)</th>
+    <th>Final P/L</th>
+  </tr>
+  <tr>
+    <td id="shares"></td>
+    <td id="payout"></td>
+    <td id="plShare"></td>
+    <td id="plTrade"></td>
+    <td id="totalPL"></td>
+    <td id="tax"></td>
+    <td id="finalPL"></td>
+  </tr>
+</table>
+
+<script>
+function calculate() {
+  let investment = parseFloat(document.getElementById("investment").value);
+  let dividend = parseFloat(document.getElementById("dividend").value);
+  let buyPrice = parseFloat(document.getElementById("buyPrice").value);
+  let sellPrice = parseFloat(document.getElementById("sellPrice").value);
+
+  let shares = investment / buyPrice;
+  let payout = shares * dividend;
+  let plPerShare = sellPrice - buyPrice;
+  let tradingPL = shares * plPerShare;
+  let totalPL = payout + tradingPL;
+
+  let tax = totalPL > 0 ? totalPL * 0.2 : 0;
+  let finalPL = totalPL - tax;
+
+  document.getElementById("shares").innerText = shares.toFixed(0);
+  document.getElementById("payout").innerText = "₹" + payout.toFixed(0);
+  document.getElementById("plShare").innerText = plPerShare.toFixed(2);
+  document.getElementById("plTrade").innerText = "₹" + tradingPL.toFixed(0);
+  document.getElementById("totalPL").innerText = "₹" + totalPL.toFixed(0);
+  document.getElementById("tax").innerText = "₹" + tax.toFixed(0);
+  document.getElementById("finalPL").innerText = "₹" + finalPL.toFixed(0);
+
+  document.getElementById("resultTable").style.display = "table";
+}
+</script>
+
+</body>
+</html>
