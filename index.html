@@ -111,15 +111,27 @@
 </div>
 
 <div class="form">
-  <input type="date" id="exDate">
-  <input type="text" id="company" placeholder="Company (e.g. RELIANCE)">
-  <input type="text" id="investment" placeholder="Investment">
-  
-  <input type="number" id="dividend" placeholder="Dividend">
-  <input type="number" id="buyPrice" placeholder="Buy Price (auto)">
-  <input type="number" id="sellPrice" placeholder="Sell Price">
-  <button onclick="addTrade()">Add Trade</button>
-  <p id="amountWords"></p>
+  <div style="grid-column: 1;">
+    <input type="date" id="exDate">
+  </div>
+  <div style="grid-column: 2;">
+    <input type="text" id="company" placeholder="Company (e.g. RELIANCE)">
+  </div>
+  <div style="grid-column: 3;">
+    <input type="text" id="investment" placeholder="Investment">
+    <p id="amountWords"></p>
+  </div>
+  <div style="grid-column: 4;">
+    <input type="number" id="dividend" placeholder="Dividend">
+  </div>
+  <div style="grid-column: 5;">
+    <input type="number" id="buyPrice" placeholder="Buy Price (auto)">
+  </div>
+  <div style="grid-column: 6;">
+    <input type="number" id="sellPrice" placeholder="Sell Price">
+  </div>
+  <button onclick="addTrade()" style="grid-column: 1 / -1;">Add Trade</button>
+</div>
 </div>
 
 <div class="grid" id="cards"></div>
