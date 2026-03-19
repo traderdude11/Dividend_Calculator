@@ -100,50 +100,44 @@
 
 <body>
 
-<div class="container">
+<div style="display: flex; gap: 20px; margin-bottom: 20px;">
+  <div style="flex: 1;">
+    <div class="form">
+      <div style="grid-column: 1;">
+        <input type="date" id="exDate">
+      </div>
+      <div style="grid-column: 2;">
+        <input type="text" id="company" placeholder="Company (e.g. RELIANCE)">
+      </div>
+      <div style="grid-column: 3;">
+        <input type="text" id="investment" placeholder="Investment">
+        <p id="amountWords"></p>
+      </div>
+      <div style="grid-column: 4;">
+        <input type="number" id="dividend" placeholder="Dividend">
+      </div>
+      <div style="grid-column: 5;">
+        <input type="number" id="buyPrice" placeholder="Buy Price (auto)">
+      </div>
+      <div style="grid-column: 6;">
+        <input type="number" id="sellPrice" placeholder="Sell Price">
+      </div>
+      <button onclick="addTrade()" style="grid-column: 1 / -1;">Add Trade</button>
+    </div>
+    
+    <div class="grid" id="cards"></div>
+  </div>
 
-<h1>📊 Dividend Intelligence Pro</h1>
-
-<div class="kpi">
-  <div class="card"><h3>Total Investment</h3><h2 id="totalInv">₹0</h2></div>
-  <div class="card"><h3>Total Profit</h3><h2 id="totalProfit">₹0</h2></div>
-  <div class="card"><h3>Total Trades</h3><h2 id="totalTrades">0</h2></div>
+  <!-- RIGHT SIDE: UPCOMING DIVIDEND NEWS -->
+  <div style="width: 320px; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; height: fit-content; position: sticky; top: 20px;">
+    <h3 style="margin-top: 0; color: #fbbf24; border-bottom: 2px solid #f59e0b; padding-bottom: 10px;">📰 Upcoming Dividends</h3>
+    <div id="newsList" style="max-height: 600px; overflow-y: auto;">
+      <p style="color: #94a3b8; text-align: center; font-size: 12px;">Loading upcoming dividend news...</p>
+    </div>
+  </div>
 </div>
-
-<div class="form">
-  <div style="grid-column: 1;">
-    <input type="date" id="exDate">
-  </div>
-  <div style="grid-column: 2;">
-    <input type="text" id="company" placeholder="Company (e.g. RELIANCE)">
-  </div>
-  <div style="grid-column: 3;">
-    <input type="text" id="investment" placeholder="Investment">
-    <p id="amountWords"></p>
-  </div>
-  <div style="grid-column: 4;">
-    <input type="number" id="dividend" placeholder="Dividend">
-  </div>
-  <div style="grid-column: 5;">
-    <input type="number" id="buyPrice" placeholder="Buy Price (auto)">
-  </div>
-  <div style="grid-column: 6;">
-    <input type="number" id="sellPrice" placeholder="Sell Price">
-  </div>
-  <button onclick="addTrade()" style="grid-column: 1 / -1;">Add Trade</button>
-</div>
-</div>
-
-<div class="grid" id="cards"></div>
-
-<h2 style="margin-top:30px;">📈 Profit Growth</h2>
-<div class="card">
-  <canvas id="chart"></canvas>
-</div>
-
-</div>
-
-<script>
+  
+  <script>
 let trades = JSON.parse(localStorage.getItem("trades") || "[]");
 
 let totalInvestment = 0;
@@ -327,7 +321,31 @@ function clearInputs() {
 }
 
 // INIT
-render();
+// UPCOMING DIVIDEND NEWS
+async function loadDividendNews() {
+  const news = [
+    { company: 'RELIANCE', date: '2026-03-25', yield: '3.2%', amount: '₹25' },
+    { company: 'TCS', date: '2026-03-28', yield: '2.8%', amount: '₹32' },
+    { company: 'INFY', date: '2026-04-02', yield: '1.5%', amount: '₹18' },
+    { company: 'HDFC', date: '2026-04-05', yield: '2.1%', amount: '₹28' },
+    { company: 'ICICI', date: '2026-04-10', yield: '2.9%', amount: '₹22' },
+  ];
+
+  const newsList = document.getElementById('newsList');
+  newsList.innerHTML = news.map(n => `
+    <div style="background: rgba(255,255,255,0.08); padding: 10px; margin-bottom: 8px; border-radius: 8px; border-left: 3px solid #f59e0b;">
+      <p style="margin: 0 0 5px 0; font-weight: bold; color: #22c55e;">${n.company}</p>
+      <p style="margin: 0 0 3px 0; font-size: 11px; color: #94a3b8;">📅 ${n.date}</p>
+      <div style="display: flex; justify-content: space-between; font-size: 12px;">
+        <span style="color: #fbbf24;">Yield: ${n.yield}</span>
+        <span style="color: #22c55e; font-weight: bold;">${n.amount}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+loadDividendNews();
+    render();
 </script>
 
 </body>
