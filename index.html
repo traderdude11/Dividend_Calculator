@@ -1,159 +1,23 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Dividend Intelligence Pro</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-
-  <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background: linear-gradient(135deg, #1e293b, #0f172a);
-      color: white;
-      margin: 0;
-      padding: 20px;
-    }
-
-    h1 {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-
-    .container {
-      max-width: 1200px;
-      margin: auto;
-    }
-
-    /* KPI CARDS */
-    .kpi {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 15px;
-      margin-bottom: 20px;
-    }
-
-    .card {
-      background: rgba(255,255,255,0.05);
-      backdrop-filter: blur(10px);
-      padding: 15px;
-      border-radius: 15px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-    }
-
-    .card h3 {
-      margin: 0;
-      font-size: 14px;
-      color: #94a3b8;
-    }
-
-    .card h2 {
-      margin: 5px 0;
-    }
-
-    /* INPUT PANEL */
-    .form {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 10px;
-      margin-bottom: 20px;
-    }
-
-    input {
-      padding: 10px;
-      border-radius: 8px;
-      border: none;
-      outline: none;
-    }
-
-    button {
-      background: #22c55e;
-      border: none;
-      padding: 12px;
-      border-radius: 10px;
-      color: white;
-      cursor: pointer;
-      font-weight: bold;
-    }
-
-    button:hover {
-      background: #16a34a;
-    }
-
-    /* CARDS */
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 15px;
-    }
-
-    .stock-card {
-      background: rgba(255,255,255,0.05);
-      padding: 15px;
-      border-radius: 15px;
-      transition: 0.3s;
-    }
-
-    .stock-card:hover {
-      transform: translateY(-5px);
-    }
-
-    .tag {
-      padding: 5px 10px;
-      border-radius: 6px;
-      font-size: 12px;
-    }
-
-    .high { background: #16a34a; }
-    .mid { background: #f59e0b; }
-    .low { background: #ef4444; }
-
-    .profit { color: #22c55e; }
-    .loss { color: #ef4444; }
-
-  </style>
-</head>
-
-<body>
-
-<div class="container">
-
-<h1>📊 Dividend Intelligence Pro</h1>
-
-<!-- KPI -->
-<div class="kpi">
-  <div class="card">
-    <h3>Total Investment</h3>
-    <h2 id="totalInv">₹0</h2>
-  </div>
-  <div class="card">
-    <h3>Total Profit</h3>
-    <h2 id="totalProfit">₹0</h2>
-  </div>
-  <div class="card">
-    <h3>Total Trades</h3>
-    <h2 id="totalTrades">0</h2>
-  </div>
-</div>
-
-<!-- FORM -->
-<div class="form">
-  <input type="date" id="exDate">
-  <input type="text" id="company" placeholder="Company">
-  <input type="number" id="investment" placeholder="Investment">
-  <input type="number" id="dividend" placeholder="Dividend">
-  <input type="number" id="buyPrice" placeholder="Buy Price">
-  <input type="number" id="sellPrice" placeholder="Sell Price">
-  <button onclick="addTrade()">Add Trade</button>
-</div>
-
-<!-- CARDS -->
-<div class="grid" id="cards"></div>
-
-</div>
-
-<script>
 let totalInvestment = 0;
 let totalProfit = 0;
 let totalTrades = 0;
+
+let profitData = [];
+let labels = [];
+
+const ctx = document.getElementById('profitChart').getContext('2d');
+
+const chart = new Chart(ctx, {
+  type: 'line',
+  data: {
+    labels: labels,
+    datasets: [{
+      label: 'Profit Growth',
+      data: profitData,
+      tension: 0.3
+    }]
+  }
+});
 
 function getTag(div) {
   if (div > 10) return '<span class="tag high">🔥 High</span>';
@@ -167,6 +31,11 @@ function addTrade() {
   let sell = parseFloat(sellPrice.value);
   let div = parseFloat(dividend.value);
 
+  if (!inv || !buy || !div) {
+    alert("Fill required fields");
+    return;
+  }
+
   let shares = inv / buy;
   let payout = shares * div;
 
@@ -174,6 +43,7 @@ function addTrade() {
   let tax = (trading > 0 ? trading * 0.2 : 0) + payout * 0.3;
   let final = payout + trading - tax;
 
+  // CARD UI
   let card = document.createElement("div");
   card.className = "stock-card";
 
@@ -189,17 +59,31 @@ function addTrade() {
 
   document.getElementById("cards").appendChild(card);
 
+  // KPI UPDATE
   totalInvestment += inv;
   totalProfit += final;
   totalTrades++;
 
-  totalInv.innerText = "₹" + totalInvestment.toFixed(0);
-  totalProfit.innerText = "₹" + totalProfit.toFixed(0);
-  totalTradesEl = document.getElementById("totalTrades");
-  totalTradesEl.innerText = totalTrades;
+  document.getElementById("totalInv").innerText = "₹" + totalInvestment.toFixed(0);
+  document.getElementById("totalProfit").innerText = "₹" + totalProfit.toFixed(0);
+  document.getElementById("totalTrades").innerText = totalTrades;
 
+  // 📈 CHART UPDATE
+  profitData.push(totalProfit);
+  labels.push("Trade " + totalTrades);
+
+  chart.update();
+
+  // 🔔 SMART ALERT
+  if (div > 10) {
+    alert("🔥 High Dividend Opportunity: " + company.value);
+  }
+
+  // CLEAR
+  exDate.value = "";
+  company.value = "";
+  investment.value = "";
+  dividend.value = "";
+  buyPrice.value = "";
+  sellPrice.value = "";
 }
-</script>
-
-</body>
-</html>
