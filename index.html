@@ -4,7 +4,6 @@
   <title>Dividend Intelligence Pro</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <!-- Chart -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
@@ -18,7 +17,7 @@
 
     .container { max-width: 1200px; margin: auto; }
 
-    h1 { text-align: center; }
+    h1 { text-align: center; margin-bottom: 20px; }
 
     .kpi {
       display: grid;
@@ -48,9 +47,9 @@
 
     button {
       background: #22c55e;
-      padding: 12px;
+      padding: 10px;
       border: none;
-      border-radius: 10px;
+      border-radius: 8px;
       color: white;
       cursor: pointer;
     }
@@ -65,6 +64,12 @@
       background: rgba(255,255,255,0.05);
       padding: 15px;
       border-radius: 15px;
+      transition: 0.3s;
+    }
+
+    .stock-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.4);
     }
 
     .profit { color: #22c55e; }
@@ -80,6 +85,11 @@
     .mid { background: #f59e0b; }
     .low { background: #ef4444; }
 
+    .actions {
+      display: flex;
+      gap: 5px;
+      margin-top: 10px;
+    }
   </style>
 </head>
 
@@ -96,11 +106,6 @@
   <div class="card"><h3>Total Trades</h3><h2 id="totalTrades">0</h2></div>
 </div>
 
-<!-- CHART -->
-<div class="card">
-  <canvas id="chart"></canvas>
-</div>
-
 <!-- FORM -->
 <div class="form">
   <input type="date" id="exDate">
@@ -115,9 +120,17 @@
 <!-- CARDS -->
 <div class="grid" id="cards"></div>
 
+<!-- CHART BELOW -->
+<h2 style="margin-top:30px;">📈 Profit Growth</h2>
+<div class="card">
+  <canvas id="chart"></canvas>
+</div>
+
 </div>
 
 <script>
+let trades = JSON.parse(localStorage.getItem("trades") || "[]");
+
 let totalInvestment = 0;
 let totalProfit = 0;
 let totalTrades = 0;
@@ -125,21 +138,13 @@ let totalTrades = 0;
 let profitData = [];
 let labels = [];
 
-// 📊 Chart
-const ctx = document.getElementById('chart');
-const chart = new Chart(ctx, {
+// Chart
+const chart = new Chart(document.getElementById('chart'), {
   type: 'line',
-  data: {
-    labels: labels,
-    datasets: [{
-      label: 'Profit Growth',
-      data: profitData,
-      tension: 0.3
-    }]
-  }
+  data: { labels: labels, datasets: [{ label: 'Profit', data: profitData, tension: 0.3 }] }
 });
 
-// 📡 FETCH LIVE PRICE
+// Fetch stock price
 async function fetchStockPrice(symbol) {
   try {
     const res = await fetch(`https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbol}.NS`);
@@ -150,86 +155,117 @@ async function fetchStockPrice(symbol) {
   }
 }
 
-// AUTO FILL PRICE
+// Auto fill price
 company.addEventListener("change", async () => {
   let price = await fetchStockPrice(company.value.toUpperCase());
   if (price) buyPrice.value = price;
 });
 
-// TAG
 function getTag(yieldPercent) {
   if (yieldPercent > 3) return '<span class="tag high">🔥 High</span>';
   if (yieldPercent > 1.5) return '<span class="tag mid">💎 Good</span>';
   return '<span class="tag low">⚠️ Low</span>';
 }
 
-// MAIN FUNCTION
-function addTrade() {
+function render() {
+  cards.innerHTML = "";
+  totalInvestment = 0;
+  totalProfit = 0;
+  totalTrades = 0;
+  profitData = [];
+  labels = [];
 
-  let inv = parseFloat(investment.value);
-  let buy = parseFloat(buyPrice.value);
-  let sell = parseFloat(sellPrice.value);
-  let div = parseFloat(dividend.value);
+  trades.forEach((t, index) => {
+    let shares = t.inv / t.buy;
+    let payout = shares * t.div;
 
-  if (!inv || !buy || !div) {
-    alert("Fill required fields");
-    return;
-  }
+    let trading = t.sell ? shares * (t.sell - t.buy) : 0;
+    let tax = (trading > 0 ? trading * 0.2 : 0) + payout * 0.3;
+    let final = payout + trading - tax;
+    let yieldPercent = (t.div / t.buy) * 100;
 
-  let shares = inv / buy;
-  let payout = shares * div;
+    let card = document.createElement("div");
+    card.className = "stock-card";
 
-  let trading = sell ? shares * (sell - buy) : 0;
-  let tax = (trading > 0 ? trading * 0.2 : 0) + payout * 0.3;
-  let final = payout + trading - tax;
+    card.innerHTML = `
+      <h2>${t.company}</h2>
+      <p>Shares: ${shares.toFixed(2)}</p>
+      <p>Dividend: ₹${payout.toFixed(2)}</p>
+      <p>Yield: ${yieldPercent.toFixed(2)}%</p>
+      <p>Trading: ${t.sell ? "₹"+trading.toFixed(2) : "NA"}</p>
+      <p>Tax: ₹${tax.toFixed(2)}</p>
+      <p>${getTag(yieldPercent)}</p>
+      <h3 class="${final>=0?'profit':'loss'}">Final: ₹${final.toFixed(2)}</h3>
 
-  let yieldPercent = (div / buy) * 100;
+      <div class="actions">
+        <button onclick="editTrade(${index})">✏️</button>
+        <button onclick="deleteTrade(${index})">❌</button>
+      </div>
+    `;
 
-  // CARD UI
-  let card = document.createElement("div");
-  card.className = "stock-card";
+    cards.appendChild(card);
 
-  card.innerHTML = `
-    <h2>${company.value}</h2>
-    <p>Shares: ${shares.toFixed(2)}</p>
-    <p>Dividend: ₹${payout.toFixed(2)}</p>
-    <p>Yield: ${yieldPercent.toFixed(2)}%</p>
-    <p>Trading: ${sell ? "₹"+trading.toFixed(2) : "NA"}</p>
-    <p>Tax: ₹${tax.toFixed(2)}</p>
-    <p>${getTag(yieldPercent)}</p>
-    <h3 class="${final>=0?'profit':'loss'}">Final: ₹${final.toFixed(2)}</h3>
-  `;
+    totalInvestment += t.inv;
+    totalProfit += final;
+    totalTrades++;
 
-  cards.appendChild(card);
-
-  // KPI
-  totalInvestment += inv;
-  totalProfit += final;
-  totalTrades++;
+    profitData.push(totalProfit);
+    labels.push("T" + totalTrades);
+  });
 
   totalInv.innerText = "₹" + totalInvestment.toFixed(0);
   totalProfit.innerText = "₹" + totalProfit.toFixed(0);
   totalTradesEl = document.getElementById("totalTrades");
   totalTradesEl.innerText = totalTrades;
 
-  // CHART UPDATE
-  profitData.push(totalProfit);
-  labels.push("Trade " + totalTrades);
+  chart.data.labels = labels;
+  chart.data.datasets[0].data = profitData;
   chart.update();
 
-  // ALERT
-  if (yieldPercent > 3) {
-    alert(`🔥 High Yield: ${company.value} (${yieldPercent.toFixed(2)}%)`);
-  }
+  localStorage.setItem("trades", JSON.stringify(trades));
+}
 
-  // CLEAR
-  exDate.value = "";
+function addTrade() {
+  trades.push({
+    company: company.value,
+    inv: parseFloat(investment.value),
+    div: parseFloat(dividend.value),
+    buy: parseFloat(buyPrice.value),
+    sell: parseFloat(sellPrice.value)
+  });
+
+  clearInputs();
+  render();
+}
+
+function editTrade(index) {
+  let t = trades[index];
+
+  company.value = t.company;
+  investment.value = t.inv;
+  dividend.value = t.div;
+  buyPrice.value = t.buy;
+  sellPrice.value = t.sell;
+
+  trades.splice(index, 1);
+  render();
+}
+
+function deleteTrade(index) {
+  trades.splice(index, 1);
+  render();
+}
+
+function clearInputs() {
   company.value = "";
   investment.value = "";
   dividend.value = "";
   buyPrice.value = "";
   sellPrice.value = "";
 }
+
+// INIT
+render();
 </script>
 
 </body>
