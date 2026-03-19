@@ -1,226 +1,203 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Dividend Capture Pro+</title>
+  <title>Dividend Intelligence Pro</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <style>
     body {
-      font-family: Arial;
-      max-width: 1300px;
-      margin: auto;
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #1e293b, #0f172a);
+      color: white;
+      margin: 0;
       padding: 20px;
-      background: #f4f6f9;
     }
-    h2 { text-align: center; }
 
-    input {
-      width: 100%;
-      padding: 8px;
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: auto;
+    }
+
+    /* KPI CARDS */
+    .kpi {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.05);
+      backdrop-filter: blur(10px);
+      padding: 15px;
+      border-radius: 15px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+
+    .card h3 {
+      margin: 0;
+      font-size: 14px;
+      color: #94a3b8;
+    }
+
+    .card h2 {
       margin: 5px 0;
     }
 
-    button {
+    /* INPUT PANEL */
+    .form {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    input {
       padding: 10px;
-      width: 100%;
-      background: #28a745;
-      color: white;
+      border-radius: 8px;
       border: none;
-      margin-top: 10px;
-      font-size: 16px;
+      outline: none;
+    }
+
+    button {
+      background: #22c55e;
+      border: none;
+      padding: 12px;
+      border-radius: 10px;
+      color: white;
       cursor: pointer;
+      font-weight: bold;
     }
 
-    button:hover { background: #218838; }
-
-    table {
-      width: 100%;
-      margin-top: 20px;
-      border-collapse: collapse;
-      background: white;
-      font-size: 11px;
+    button:hover {
+      background: #16a34a;
     }
 
-    th, td {
-      border: 1px solid #ddd;
-      padding: 6px;
-      text-align: center;
+    /* CARDS */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 15px;
     }
 
-    th {
-      background: #007bff;
-      color: white;
-    }
-
-    .profit { color: green; font-weight: bold; }
-    .loss { color: red; font-weight: bold; }
-    .warn { color: orange; font-weight: bold; }
-
-    .summary {
-      margin-top: 20px;
+    .stock-card {
+      background: rgba(255,255,255,0.05);
       padding: 15px;
-      background: white;
-      border-radius: 5px;
+      border-radius: 15px;
+      transition: 0.3s;
     }
 
-    .top-bar {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 10px;
+    .stock-card:hover {
+      transform: translateY(-5px);
     }
 
-    .badge {
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-size: 10px;
-      color: white;
+    .tag {
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 12px;
     }
 
-    .high { background: green; }
-    .mid { background: orange; }
-    .low { background: red; }
+    .high { background: #16a34a; }
+    .mid { background: #f59e0b; }
+    .low { background: #ef4444; }
+
+    .profit { color: #22c55e; }
+    .loss { color: #ef4444; }
+
   </style>
 </head>
 
 <body>
 
-<h2>📊 Dividend Capture Pro+</h2>
+<div class="container">
 
-<div class="top-bar">
-  <button onclick="loadMarketData()">📡 Auto Fetch Dividends</button>
-  <button onclick="clearAll()">🗑 Clear</button>
+<h1>📊 Dividend Intelligence Pro</h1>
+
+<!-- KPI -->
+<div class="kpi">
+  <div class="card">
+    <h3>Total Investment</h3>
+    <h2 id="totalInv">₹0</h2>
+  </div>
+  <div class="card">
+    <h3>Total Profit</h3>
+    <h2 id="totalProfit">₹0</h2>
+  </div>
+  <div class="card">
+    <h3>Total Trades</h3>
+    <h2 id="totalTrades">0</h2>
+  </div>
 </div>
 
-<input type="date" id="exDate">
-<input type="text" id="company" placeholder="Company Name">
-<input type="number" id="investment" placeholder="Investment ₹">
-<input type="number" id="dividend" placeholder="Dividend ₹">
-<input type="number" id="buyPrice" placeholder="Buy Price">
-<input type="number" id="sellPrice" placeholder="Sell Price (optional)">
+<!-- FORM -->
+<div class="form">
+  <input type="date" id="exDate">
+  <input type="text" id="company" placeholder="Company">
+  <input type="number" id="investment" placeholder="Investment">
+  <input type="number" id="dividend" placeholder="Dividend">
+  <input type="number" id="buyPrice" placeholder="Buy Price">
+  <input type="number" id="sellPrice" placeholder="Sell Price">
+  <button onclick="addTrade()">Add Trade</button>
+</div>
 
-<button onclick="addTrade()">Add Trade</button>
+<!-- CARDS -->
+<div class="grid" id="cards"></div>
 
-<table id="table">
-<tr>
-  <th>Date</th>
-  <th>Company</th>
-  <th>Shares</th>
-  <th>Buy</th>
-  <th>Sell</th>
-  <th>Dividend</th>
-  <th>Trading</th>
-  <th>Tax</th>
-  <th>Tag</th>
-  <th>Final</th>
-</tr>
-</table>
-
-<div class="summary">
-  <h3>📈 Portfolio Summary</h3>
-  <p>Total Investment: ₹<span id="totalInv">0</span></p>
-  <p>Total Profit: ₹<span id="totalProfit">0</span></p>
 </div>
 
 <script>
 let totalInvestment = 0;
 let totalProfit = 0;
+let totalTrades = 0;
 
-// 💾 LOAD SAVED DATA
-window.onload = function() {
-  let saved = JSON.parse(localStorage.getItem("trades") || "[]");
-  saved.forEach(trade => renderRow(trade));
-};
-
-// 📡 AUTO FETCH (Demo API)
-async function loadMarketData() {
-  alert("Auto fetch connected (demo). You can connect NSE API later.");
-}
-
-// 🔔 ALERT
-function smartAlert(msg) {
-  if (Notification.permission === "granted") {
-    new Notification(msg);
-  }
-}
-Notification.requestPermission();
-
-function getTag(dividend) {
-  if (dividend > 10) return '<span class="badge high">🔥 High</span>';
-  if (dividend > 5) return '<span class="badge mid">💎 Good</span>';
-  return '<span class="badge low">⚠️ Low</span>';
+function getTag(div) {
+  if (div > 10) return '<span class="tag high">🔥 High</span>';
+  if (div > 5) return '<span class="tag mid">💎 Good</span>';
+  return '<span class="tag low">⚠️ Low</span>';
 }
 
 function addTrade() {
-  let trade = {
-    date: exDate.value,
-    company: company.value,
-    investment: parseFloat(investment.value),
-    dividend: parseFloat(dividend.value),
-    buy: parseFloat(buyPrice.value),
-    sell: parseFloat(sellPrice.value)
-  };
+  let inv = parseFloat(investment.value);
+  let buy = parseFloat(buyPrice.value);
+  let sell = parseFloat(sellPrice.value);
+  let div = parseFloat(dividend.value);
 
-  renderRow(trade);
+  let shares = inv / buy;
+  let payout = shares * div;
 
-  let saved = JSON.parse(localStorage.getItem("trades") || "[]");
-  saved.push(trade);
-  localStorage.setItem("trades", JSON.stringify(saved));
+  let trading = sell ? shares * (sell - buy) : 0;
+  let tax = (trading > 0 ? trading * 0.2 : 0) + payout * 0.3;
+  let final = payout + trading - tax;
 
-  if (trade.dividend > 10) {
-    smartAlert(`🔥 High dividend: ${trade.company}`);
-  }
+  let card = document.createElement("div");
+  card.className = "stock-card";
 
-  clearInputs();
-}
-
-function renderRow(t) {
-  let shares = t.investment / t.buy;
-  let payout = shares * t.dividend;
-
-  let isSold = t.sell && t.sell > 0;
-
-  let tradingPL = isSold ? shares * (t.sell - t.buy) : 0;
-  let tradingTax = tradingPL > 0 ? tradingPL * 0.20 : 0;
-  let dividendTax = payout * 0.30;
-
-  let totalTax = tradingTax + dividendTax;
-  let finalPL = payout + tradingPL - totalTax;
-
-  let row = table.insertRow();
-
-  row.innerHTML = `
-    <td>${t.date}</td>
-    <td>${t.company}</td>
-    <td>${shares.toFixed(2)}</td>
-    <td>₹${t.buy}</td>
-    <td>${isSold ? "₹"+t.sell : "NA"}</td>
-    <td>₹${payout.toFixed(2)}</td>
-    <td>${isSold ? "₹"+tradingPL.toFixed(2) : "NA"}</td>
-    <td>₹${totalTax.toFixed(2)}</td>
-    <td>${getTag(t.dividend)}</td>
-    <td class="${finalPL>=0?'profit':'loss'}">₹${finalPL.toFixed(2)}</td>
+  card.innerHTML = `
+    <h2>${company.value}</h2>
+    <p>Shares: ${shares.toFixed(2)}</p>
+    <p>Dividend: ₹${payout.toFixed(2)}</p>
+    <p>Trading: ${sell ? "₹"+trading.toFixed(2) : "NA"}</p>
+    <p>Tax: ₹${tax.toFixed(2)}</p>
+    <p>${getTag(div)}</p>
+    <h3 class="${final>=0?'profit':'loss'}">Final: ₹${final.toFixed(2)}</h3>
   `;
 
-  totalInvestment += t.investment;
-  totalProfit += finalPL;
+  document.getElementById("cards").appendChild(card);
 
-  totalInv.innerText = totalInvestment.toFixed(2);
-  totalProfitEl = document.getElementById("totalProfit");
-  totalProfitEl.innerText = totalProfit.toFixed(2);
-}
+  totalInvestment += inv;
+  totalProfit += final;
+  totalTrades++;
 
-function clearInputs() {
-  exDate.value = "";
-  company.value = "";
-  investment.value = "";
-  dividend.value = "";
-  buyPrice.value = "";
-  sellPrice.value = "";
-}
+  totalInv.innerText = "₹" + totalInvestment.toFixed(0);
+  totalProfit.innerText = "₹" + totalProfit.toFixed(0);
+  totalTradesEl = document.getElementById("totalTrades");
+  totalTradesEl.innerText = totalTrades;
 
-function clearAll() {
-  localStorage.removeItem("trades");
-  location.reload();
 }
 </script>
 
