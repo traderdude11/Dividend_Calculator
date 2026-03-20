@@ -15,15 +15,21 @@
       padding: 20px;
     }
 
-    .container { max-width: 1200px; margin: auto; }
+    h1 { text-align: center; }
 
-    h1 { text-align: center; margin-bottom: 20px; }
+    .layout {
+      display: flex;
+      gap: 20px;
+    }
+
+    .left { flex: 3; }
+    .right { flex: 1; }
 
     .kpi {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
       gap: 15px;
-      margin-bottom: 20px;
+      margin: 20px 0;
     }
 
     .card {
@@ -36,7 +42,6 @@
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
       gap: 10px;
-      margin-bottom: 20px;
     }
 
     input {
@@ -58,6 +63,7 @@
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
       gap: 15px;
+      margin-top: 20px;
     }
 
     .stock-card {
@@ -69,18 +75,12 @@
 
     .stock-card:hover {
       transform: translateY(-6px);
-      box-shadow: 0 10px 25px rgba(0,0,0,0.4);
     }
 
     .profit { color: #22c55e; }
     .loss { color: #ef4444; }
 
-    .tag {
-      padding: 5px 10px;
-      border-radius: 6px;
-      font-size: 12px;
-    }
-
+    .tag { padding: 5px 10px; border-radius: 6px; font-size: 12px; }
     .high { background: #16a34a; }
     .mid { background: #f59e0b; }
     .low { background: #ef4444; }
@@ -95,14 +95,27 @@
       font-size: 12px;
       color: #94a3b8;
     }
+
+    #dividendList div {
+      padding: 10px;
+      border-bottom: 1px solid #333;
+      cursor: pointer;
+    }
+
+    #dividendList div:hover {
+      background: rgba(255,255,255,0.05);
+    }
   </style>
 </head>
 
 <body>
 
-<div class="container">
-
 <h1>📊 Dividend Intelligence Pro</h1>
+
+<div class="layout">
+
+<!-- LEFT -->
+<div class="left">
 
 <div class="kpi">
   <div class="card"><h3>Total Investment</h3><h2 id="totalInv">₹0</h2></div>
@@ -112,20 +125,30 @@
 
 <div class="form">
   <input type="date" id="exDate">
-  <input type="text" id="company" placeholder="Company (e.g. RELIANCE)">
+  <input type="text" id="company" placeholder="Company">
   <input type="text" id="investment" placeholder="Investment">
   <p id="amountWords"></p>
   <input type="number" id="dividend" placeholder="Dividend">
-  <input type="number" id="buyPrice" placeholder="Buy Price (auto)">
+  <input type="number" id="buyPrice" placeholder="Buy Price">
   <input type="number" id="sellPrice" placeholder="Sell Price">
   <button onclick="addTrade()">Add Trade</button>
 </div>
 
 <div class="grid" id="cards"></div>
 
-<h2 style="margin-top:30px;">📈 Profit Growth</h2>
+<h2>📈 Profit Growth</h2>
 <div class="card">
   <canvas id="chart"></canvas>
+</div>
+
+</div>
+
+<!-- RIGHT PANEL -->
+<div class="right">
+  <div class="card">
+    <h3>📅 Upcoming Dividends</h3>
+    <div id="dividendList"></div>
+  </div>
 </div>
 
 </div>
@@ -136,47 +159,28 @@ const totalProfitEl = document.getElementById("totalProfit");
 const totalTradesEl = document.getElementById("totalTrades");
 
 let trades = JSON.parse(localStorage.getItem("trades") || "[]");
-
-let totalInvestment = 0;
-let totalProfit = 0;
-let totalTrades = 0;
+let editIndex = -1;
 
 let profitData = [];
 let labels = [];
-let editIndex = -1;
 
-// FORMAT INR
+// FORMAT
 function formatINR(num) {
-  if (!num) return "₹0.00";
-  return "₹" + Number(num).toLocaleString("en-IN", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
+  return "₹" + Number(num || 0).toLocaleString("en-IN", {
+    minimumFractionDigits: 2
   });
 }
 
-// NUMBER TO WORDS
+// WORDS
 function numberToWords(num) {
   if (!num) return "";
-  const a = ["","One","Two","Three","Four","Five","Six","Seven","Eight","Nine","Ten",
-  "Eleven","Twelve","Thirteen","Fourteen","Fifteen","Sixteen","Seventeen","Eighteen","Nineteen"];
-  const b = ["","","Twenty","Thirty","Forty","Fifty","Sixty","Seventy","Eighty","Ninety"];
-
-  function convert(n) {
-    if (n < 20) return a[n];
-    if (n < 100) return b[Math.floor(n/10)] + " " + a[n%10];
-    if (n < 1000) return a[Math.floor(n/100)] + " Hundred " + convert(n%100);
-    if (n < 100000) return convert(Math.floor(n/1000)) + " Thousand " + convert(n%1000);
-    if (n < 10000000) return convert(Math.floor(n/100000)) + " Lakh " + convert(n%100000);
-    return convert(Math.floor(n/10000000)) + " Crore " + convert(n%10000000);
-  }
-
-  return convert(num) + " Rupees";
+  return num + " Rupees";
 }
 
-// Chart
+// CHART
 const chart = new Chart(document.getElementById('chart'), {
   type: 'line',
-  data: { labels: labels, datasets: [{ label: 'Profit', data: profitData, tension: 0.3 }] }
+  data: { labels: labels, datasets: [{ label: 'Profit', data: profitData }] }
 });
 
 // FETCH PRICE
@@ -185,23 +189,18 @@ async function fetchStockPrice(symbol) {
     const res = await fetch(`https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbol}.NS`);
     const data = await res.json();
     return data.quoteResponse.result[0].regularMarketPrice;
-  } catch {
-    return null;
-  }
+  } catch { return null; }
 }
 
-// AUTO FILL PRICE
 company.addEventListener("change", async () => {
   let price = await fetchStockPrice(company.value.toUpperCase());
   if (price) buyPrice.value = price;
-  else alert("Stock not found / API issue");
 });
 
-// INPUT UX FIX
+// INPUT UX
 investment.addEventListener("focus", () => {
   investment.value = investment.value.replace(/,/g, "");
 });
-
 investment.addEventListener("blur", () => {
   let num = parseFloat(investment.value);
   if (!isNaN(num)) {
@@ -211,22 +210,21 @@ investment.addEventListener("blur", () => {
 });
 
 // TAG
-function getTag(yieldPercent) {
-  if (yieldPercent > 3) return '<span class="tag high">🔥 High</span>';
-  if (yieldPercent > 1.5) return '<span class="tag mid">💎 Good</span>';
+function getTag(y) {
+  if (y > 3) return '<span class="tag high">🔥 High</span>';
+  if (y > 1.5) return '<span class="tag mid">💎 Good</span>';
   return '<span class="tag low">⚠️ Low</span>';
 }
 
 // RENDER
 function render() {
   cards.innerHTML = "";
-  totalInvestment = 0;
-  totalProfit = 0;
-  totalTrades = 0;
   profitData = [];
   labels = [];
 
-  trades.forEach((t, index) => {
+  let totalInvestment = 0, totalProfit = 0;
+
+  trades.forEach((t, i) => {
     let shares = t.inv / t.buy;
     let payout = shares * t.div;
     let trading = t.sell ? shares * (t.sell - t.buy) : 0;
@@ -239,17 +237,13 @@ function render() {
 
     card.innerHTML = `
       <h2>${t.company}</h2>
-      <p>Shares: ${shares.toFixed(2)}</p>
       <p>Dividend: ${formatINR(payout)}</p>
       <p>Yield: ${yieldPercent.toFixed(2)}%</p>
-      <p>Trading: ${t.sell ? formatINR(trading) : "NA"}</p>
-      <p>Tax: ${formatINR(tax)}</p>
       <p>${getTag(yieldPercent)}</p>
-      <h3 class="${final>=0?'profit':'loss'}">Final: ${formatINR(final)}</h3>
-
+      <h3 class="${final>=0?'profit':'loss'}">${formatINR(final)}</h3>
       <div class="actions">
-        <button onclick="editTrade(${index})">✏️</button>
-        <button onclick="deleteTrade(${index})">❌</button>
+        <button onclick="editTrade(${i})">✏️</button>
+        <button onclick="deleteTrade(${i})">❌</button>
       </div>
     `;
 
@@ -257,15 +251,14 @@ function render() {
 
     totalInvestment += t.inv;
     totalProfit += final;
-    totalTrades++;
 
     profitData.push(totalProfit);
-    labels.push("T" + totalTrades);
+    labels.push("T" + (i+1));
   });
 
   totalInvEl.innerText = formatINR(totalInvestment);
   totalProfitEl.innerText = formatINR(totalProfit);
-  totalTradesEl.innerText = totalTrades;
+  totalTradesEl.innerText = trades.length;
 
   chart.data.labels = labels;
   chart.data.datasets[0].data = profitData;
@@ -281,53 +274,40 @@ function addTrade() {
   let buy = parseFloat(buyPrice.value);
 
   if (!company.value || !inv || !div || !buy) {
-    alert("Please fill all required fields");
+    alert("Fill all fields");
     return;
   }
 
-  let tradeObj = {
-    company: company.value.toUpperCase(),
-    inv: inv,
-    div: div,
-    buy: buy,
-    sell: parseFloat(sellPrice.value)
-  };
+  let obj = { company: company.value.toUpperCase(), inv, div, buy, sell: parseFloat(sellPrice.value) };
 
   if (editIndex >= 0) {
-    trades[editIndex] = tradeObj;
+    trades[editIndex] = obj;
     editIndex = -1;
   } else {
-    trades.push(tradeObj);
+    trades.push(obj);
   }
 
   clearInputs();
   render();
 }
 
-// EDIT
-function editTrade(index) {
-  let t = trades[index];
-
+function editTrade(i) {
+  let t = trades[i];
   company.value = t.company;
-  investment.value = t.inv.toLocaleString("en-IN");
+  investment.value = t.inv;
   dividend.value = t.div;
   buyPrice.value = t.buy;
   sellPrice.value = t.sell;
-
-  amountWords.innerText = numberToWords(t.inv);
-
-  editIndex = index;
+  editIndex = i;
 }
 
-// DELETE
-function deleteTrade(index) {
-  if (confirm("Delete this trade?")) {
-    trades.splice(index, 1);
+function deleteTrade(i) {
+  if (confirm("Delete trade?")) {
+    trades.splice(i,1);
     render();
   }
 }
 
-// CLEAR
 function clearInputs() {
   company.value = "";
   investment.value = "";
@@ -337,8 +317,39 @@ function clearInputs() {
   amountWords.innerText = "";
 }
 
+// RIGHT PANEL DATA
+const upcomingDividends = [
+  { company: "BPCL", dividend: 10, exDate: "2026-02-02" },
+  { company: "RECLTD", dividend: 8, exDate: "2026-02-10" },
+  { company: "IOC", dividend: 4, exDate: "2026-02-15" },
+  { company: "ONGC", dividend: 12, exDate: "2026-02-20" }
+];
+
+function renderDividends() {
+  let container = document.getElementById("dividendList");
+
+  upcomingDividends.forEach(stock => {
+    let div = document.createElement("div");
+
+    div.innerHTML = `
+      <b>${stock.company}</b> - ₹${stock.dividend}<br>
+      <small>EX: ${stock.exDate}</small>
+    `;
+
+    div.onclick = async () => {
+      company.value = stock.company;
+      dividend.value = stock.dividend;
+      let price = await fetchStockPrice(stock.company);
+      if (price) buyPrice.value = price;
+    };
+
+    container.appendChild(div);
+  });
+}
+
 // INIT
 render();
+renderDividends();
 </script>
 
 </body>
