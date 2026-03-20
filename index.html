@@ -3,7 +3,6 @@
 <head>
   <title>Dividend Intelligence Pro</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
@@ -17,25 +16,21 @@
 
     h1 { text-align: center; }
 
-    .layout {
-      display: flex;
-      gap: 20px;
-    }
-
+    .layout { display: flex; gap: 20px; }
     .left { flex: 3; }
     .right { flex: 1; }
+
+    .card {
+      background: rgba(255,255,255,0.05);
+      padding: 15px;
+      border-radius: 15px;
+    }
 
     .kpi {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
       gap: 15px;
       margin: 20px 0;
-    }
-
-    .card {
-      background: rgba(255,255,255,0.05);
-      padding: 15px;
-      border-radius: 15px;
     }
 
     .form {
@@ -70,26 +65,10 @@
       background: rgba(255,255,255,0.05);
       padding: 15px;
       border-radius: 15px;
-      transition: 0.3s;
-    }
-
-    .stock-card:hover {
-      transform: translateY(-6px);
     }
 
     .profit { color: #22c55e; }
     .loss { color: #ef4444; }
-
-    .tag { padding: 5px 10px; border-radius: 6px; font-size: 12px; }
-    .high { background: #16a34a; }
-    .mid { background: #f59e0b; }
-    .low { background: #ef4444; }
-
-    .actions {
-      display: flex;
-      gap: 5px;
-      margin-top: 10px;
-    }
 
     #amountWords {
       font-size: 12px;
@@ -143,38 +122,37 @@
 
 </div>
 
-<!-- RIGHT PANEL -->
+<!-- RIGHT -->
 <div class="right">
   <div class="card">
     <h3>📅 Upcoming Dividends</h3>
-    <div id="dividendList"></div>
+    <div id="dividendList">Loading...</div>
   </div>
 </div>
 
 </div>
 
 <script>
+const FINNHUB_API_KEY = "YOUR_API_KEY";
+
+// ELEMENTS
 const totalInvEl = document.getElementById("totalInv");
 const totalProfitEl = document.getElementById("totalProfit");
 const totalTradesEl = document.getElementById("totalTrades");
 
 let trades = JSON.parse(localStorage.getItem("trades") || "[]");
 let editIndex = -1;
-
 let profitData = [];
 let labels = [];
 
 // FORMAT
 function formatINR(num) {
-  return "₹" + Number(num || 0).toLocaleString("en-IN", {
-    minimumFractionDigits: 2
-  });
+  return "₹" + Number(num || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
 }
 
 // WORDS
 function numberToWords(num) {
-  if (!num) return "";
-  return num + " Rupees";
+  return num ? num + " Rupees" : "";
 }
 
 // CHART
@@ -183,41 +161,69 @@ const chart = new Chart(document.getElementById('chart'), {
   data: { labels: labels, datasets: [{ label: 'Profit', data: profitData }] }
 });
 
-// FETCH PRICE
-async function fetchDividendData(symbol) {
+// FETCH STOCK PRICE
+async function fetchStockPrice(symbol) {
   try {
-    const res = await fetch(
-      `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}.NS?range=1y&interval=1d&events=div`
-    );
-
+    const res = await fetch(`https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbol}.NS`);
     const data = await res.json();
+    return data.quoteResponse.result[0].regularMarketPrice;
+  } catch { return null; }
+}
 
-    let events = data.chart.result[0].events;
+// FINNHUB DIVIDEND CALENDAR
+async function fetchUpcomingDividends() {
+  const today = new Date().toISOString().split("T")[0];
+  const nextMonth = new Date(Date.now() + 30*24*60*60*1000).toISOString().split("T")[0];
 
-    if (!events || !events.dividends) return null;
-
-    let dividends = Object.values(events.dividends);
-
-    return dividends.map(d => ({
-      date: new Date(d.date * 1000).toISOString().split("T")[0],
-      amount: d.amount
-    }));
-
+  try {
+    const res = await fetch(`https://finnhub.io/api/v1/calendar/dividend?from=${today}&to=${nextMonth}&token=${FINNHUB_API_KEY}`);
+    const data = await res.json();
+    return data.dividendCalendar || [];
   } catch {
-    return null;
+    return [];
   }
 }
-}
 
-company.addEventListener("change", async () => {
-  let price = await fetchStockPrice(company.value.toUpperCase());
-  if (price) buyPrice.value = price;
-});
+// RENDER DIVIDENDS
+async function renderDividends() {
+  const container = document.getElementById("dividendList");
+  container.innerHTML = "Loading...";
+
+  let dividends = await fetchUpcomingDividends();
+
+  if (!dividends.length) {
+    container.innerHTML = "No data / API limit reached";
+    return;
+  }
+
+  container.innerHTML = "";
+
+  dividends.slice(0, 15).forEach(stock => {
+    let div = document.createElement("div");
+
+    div.innerHTML = `
+      <b>${stock.symbol}</b><br>
+      ₹${stock.amount || "N/A"}<br>
+      <small>EX: ${stock.exDate}</small>
+    `;
+
+    div.onclick = async () => {
+      company.value = stock.symbol.replace(".NS","");
+      dividend.value = stock.amount || "";
+
+      let price = await fetchStockPrice(company.value);
+      if (price) buyPrice.value = price;
+    };
+
+    container.appendChild(div);
+  });
+}
 
 // INPUT UX
 investment.addEventListener("focus", () => {
   investment.value = investment.value.replace(/,/g, "");
 });
+
 investment.addEventListener("blur", () => {
   let num = parseFloat(investment.value);
   if (!isNaN(num)) {
@@ -226,14 +232,7 @@ investment.addEventListener("blur", () => {
   }
 });
 
-// TAG
-function getTag(y) {
-  if (y > 3) return '<span class="tag high">🔥 High</span>';
-  if (y > 1.5) return '<span class="tag mid">💎 Good</span>';
-  return '<span class="tag low">⚠️ Low</span>';
-}
-
-// RENDER
+// RENDER MAIN
 function render() {
   cards.innerHTML = "";
   profitData = [];
@@ -247,7 +246,6 @@ function render() {
     let trading = t.sell ? shares * (t.sell - t.buy) : 0;
     let tax = (trading > 0 ? trading * 0.2 : 0) + payout * 0.3;
     let final = payout + trading - tax;
-    let yieldPercent = (t.div / t.buy) * 100;
 
     let card = document.createElement("div");
     card.className = "stock-card";
@@ -255,13 +253,9 @@ function render() {
     card.innerHTML = `
       <h2>${t.company}</h2>
       <p>Dividend: ${formatINR(payout)}</p>
-      <p>Yield: ${yieldPercent.toFixed(2)}%</p>
-      <p>${getTag(yieldPercent)}</p>
       <h3 class="${final>=0?'profit':'loss'}">${formatINR(final)}</h3>
-      <div class="actions">
-        <button onclick="editTrade(${i})">✏️</button>
-        <button onclick="deleteTrade(${i})">❌</button>
-      </div>
+      <button onclick="editTrade(${i})">Edit</button>
+      <button onclick="deleteTrade(${i})">Delete</button>
     `;
 
     cards.appendChild(card);
@@ -277,14 +271,11 @@ function render() {
   totalProfitEl.innerText = formatINR(totalProfit);
   totalTradesEl.innerText = trades.length;
 
-  chart.data.labels = labels;
-  chart.data.datasets[0].data = profitData;
   chart.update();
-
   localStorage.setItem("trades", JSON.stringify(trades));
 }
 
-// ADD / UPDATE
+// ADD
 function addTrade() {
   let inv = parseFloat(investment.value.replace(/,/g, ""));
   let div = parseFloat(dividend.value);
@@ -308,6 +299,7 @@ function addTrade() {
   render();
 }
 
+// EDIT
 function editTrade(i) {
   let t = trades[i];
   company.value = t.company;
@@ -318,6 +310,7 @@ function editTrade(i) {
   editIndex = i;
 }
 
+// DELETE
 function deleteTrade(i) {
   if (confirm("Delete trade?")) {
     trades.splice(i,1);
@@ -325,6 +318,7 @@ function deleteTrade(i) {
   }
 }
 
+// CLEAR
 function clearInputs() {
   company.value = "";
   investment.value = "";
@@ -332,36 +326,6 @@ function clearInputs() {
   buyPrice.value = "";
   sellPrice.value = "";
   amountWords.innerText = "";
-}
-
-// RIGHT PANEL DATA
-const upcomingDividends = [
-  { company: "BPCL", dividend: 10, exDate: "2026-02-02" },
-  { company: "RECLTD", dividend: 8, exDate: "2026-02-10" },
-  { company: "IOC", dividend: 4, exDate: "2026-02-15" },
-  { company: "ONGC", dividend: 12, exDate: "2026-02-20" }
-];
-
-function renderDividends() {
-  let container = document.getElementById("dividendList");
-
-  upcomingDividends.forEach(stock => {
-    let div = document.createElement("div");
-
-    div.innerHTML = `
-      <b>${stock.company}</b> - ₹${stock.dividend}<br>
-      <small>EX: ${stock.exDate}</small>
-    `;
-
-    div.onclick = async () => {
-      company.value = stock.company;
-      dividend.value = stock.dividend;
-      let price = await fetchStockPrice(stock.company);
-      if (price) buyPrice.value = price;
-    };
-
-    container.appendChild(div);
-  });
 }
 
 // INIT
