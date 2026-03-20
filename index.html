@@ -184,12 +184,29 @@ const chart = new Chart(document.getElementById('chart'), {
 });
 
 // FETCH PRICE
-async function fetchStockPrice(symbol) {
+async function fetchDividendData(symbol) {
   try {
-    const res = await fetch(`https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbol}.NS`);
+    const res = await fetch(
+      `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}.NS?range=1y&interval=1d&events=div`
+    );
+
     const data = await res.json();
-    return data.quoteResponse.result[0].regularMarketPrice;
-  } catch { return null; }
+
+    let events = data.chart.result[0].events;
+
+    if (!events || !events.dividends) return null;
+
+    let dividends = Object.values(events.dividends);
+
+    return dividends.map(d => ({
+      date: new Date(d.date * 1000).toISOString().split("T")[0],
+      amount: d.amount
+    }));
+
+  } catch {
+    return null;
+  }
+}
 }
 
 company.addEventListener("change", async () => {
