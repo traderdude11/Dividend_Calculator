@@ -152,7 +152,19 @@ function formatINR(num) {
 
 // WORDS
 function numberToWords(num) {
-  return num ? num + " Rupees" : "";
+  if (!num) return "";
+  const a = ["","One","Two","Three","Four","Five","Six","Seven","Eight","Nine","Ten",
+  "Eleven","Twelve","Thirteen","Fourteen","Fifteen","Sixteen","Seventeen","Eighteen","Nineteen"];
+  const b = ["","","Twenty","Thirty","Forty","Fifty","Sixty","Seventy","Eighty","Ninety"];
+  function convert(n) {
+    if (n < 20) return a[n];
+    if (n < 100) return b[Math.floor(n/10)] + " " + a[n%10];
+    if (n < 1000) return a[Math.floor(n/100)] + " Hundred " + convert(n%100);
+    if (n < 100000) return convert(Math.floor(n/1000)) + " Thousand " + convert(n%1000);
+    if (n < 10000000) return convert(Math.floor(n/100000)) + " Lakh " + convert(n%100000);
+    return convert(Math.floor(n/10000000)) + " Crore " + convert(n%10000000);
+  }
+  return convert(num) + " Rupees";
 }
 
 // CHART
@@ -161,19 +173,49 @@ const chart = new Chart(document.getElementById('chart'), {
   data: { labels: labels, datasets: [{ label: 'Profit', data: profitData }] }
 });
 
-// FETCH STOCK PRICE
+// FETCH PRICE (Yahoo)
 async function fetchStockPrice(symbol) {
   try {
     const res = await fetch(`https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbol}.NS`);
     const data = await res.json();
     return data.quoteResponse.result[0].regularMarketPrice;
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
 
-// FINNHUB DIVIDEND CALENDAR
+// AUTO PRICE WITH RETRY
+company.addEventListener("change", async () => {
+  let symbol = company.value.toUpperCase();
+  let price = await fetchStockPrice(symbol);
+
+  if (!price) {
+    price = await fetchStockPrice(symbol); // retry
+  }
+
+  if (price) {
+    buyPrice.value = price;
+  } else {
+    alert("Stock price not available");
+  }
+});
+
+// INPUT UX
+investment.addEventListener("focus", () => {
+  investment.value = investment.value.replace(/,/g, "");
+});
+investment.addEventListener("blur", () => {
+  let num = parseFloat(investment.value);
+  if (!isNaN(num)) {
+    investment.value = num.toLocaleString("en-IN");
+    amountWords.innerText = numberToWords(num);
+  }
+});
+
+// FINNHUB DIVIDEND API
 async function fetchUpcomingDividends() {
   const today = new Date().toISOString().split("T")[0];
-  const nextMonth = new Date(Date.now() + 30*24*60*60*1000).toISOString().split("T")[0];
+  const nextMonth = new Date(Date.now()+30*24*60*60*1000).toISOString().split("T")[0];
 
   try {
     const res = await fetch(`https://finnhub.io/api/v1/calendar/dividend?from=${today}&to=${nextMonth}&token=${FINNHUB_API_KEY}`);
@@ -187,18 +229,16 @@ async function fetchUpcomingDividends() {
 // RENDER DIVIDENDS
 async function renderDividends() {
   const container = document.getElementById("dividendList");
-  container.innerHTML = "Loading...";
-
   let dividends = await fetchUpcomingDividends();
 
   if (!dividends.length) {
-    container.innerHTML = "No data / API limit reached";
+    container.innerHTML = "No data / API limit";
     return;
   }
 
   container.innerHTML = "";
 
-  dividends.slice(0, 15).forEach(stock => {
+  dividends.slice(0,15).forEach(stock => {
     let div = document.createElement("div");
 
     div.innerHTML = `
@@ -211,28 +251,25 @@ async function renderDividends() {
       company.value = stock.symbol.replace(".NS","");
       dividend.value = stock.amount || "";
 
-      let price = await fetchStockPrice(company.value);
-      if (price) buyPrice.value = price;
+      let symbol = company.value;
+      let price = await fetchStockPrice(symbol);
+
+      if (!price) {
+        price = await fetchStockPrice(symbol);
+      }
+
+      if (price) {
+        buyPrice.value = price;
+      } else {
+        alert("Price fetch failed");
+      }
     };
 
     container.appendChild(div);
   });
 }
 
-// INPUT UX
-investment.addEventListener("focus", () => {
-  investment.value = investment.value.replace(/,/g, "");
-});
-
-investment.addEventListener("blur", () => {
-  let num = parseFloat(investment.value);
-  if (!isNaN(num)) {
-    investment.value = num.toLocaleString("en-IN");
-    amountWords.innerText = numberToWords(num);
-  }
-});
-
-// RENDER MAIN
+// MAIN RENDER
 function render() {
   cards.innerHTML = "";
   profitData = [];
@@ -240,15 +277,15 @@ function render() {
 
   let totalInvestment = 0, totalProfit = 0;
 
-  trades.forEach((t, i) => {
+  trades.forEach((t,i) => {
     let shares = t.inv / t.buy;
     let payout = shares * t.div;
     let trading = t.sell ? shares * (t.sell - t.buy) : 0;
-    let tax = (trading > 0 ? trading * 0.2 : 0) + payout * 0.3;
+    let tax = (trading>0?trading*0.2:0) + payout*0.3;
     let final = payout + trading - tax;
 
     let card = document.createElement("div");
-    card.className = "stock-card";
+    card.className="stock-card";
 
     card.innerHTML = `
       <h2>${t.company}</h2>
@@ -264,7 +301,7 @@ function render() {
     totalProfit += final;
 
     profitData.push(totalProfit);
-    labels.push("T" + (i+1));
+    labels.push("T"+(i+1));
   });
 
   totalInvEl.innerText = formatINR(totalInvestment);
@@ -277,7 +314,7 @@ function render() {
 
 // ADD
 function addTrade() {
-  let inv = parseFloat(investment.value.replace(/,/g, ""));
+  let inv = parseFloat(investment.value.replace(/,/g,""));
   let div = parseFloat(dividend.value);
   let buy = parseFloat(buyPrice.value);
 
@@ -288,9 +325,9 @@ function addTrade() {
 
   let obj = { company: company.value.toUpperCase(), inv, div, buy, sell: parseFloat(sellPrice.value) };
 
-  if (editIndex >= 0) {
-    trades[editIndex] = obj;
-    editIndex = -1;
+  if (editIndex>=0) {
+    trades[editIndex]=obj;
+    editIndex=-1;
   } else {
     trades.push(obj);
   }
@@ -300,32 +337,32 @@ function addTrade() {
 }
 
 // EDIT
-function editTrade(i) {
-  let t = trades[i];
-  company.value = t.company;
-  investment.value = t.inv;
-  dividend.value = t.div;
-  buyPrice.value = t.buy;
-  sellPrice.value = t.sell;
-  editIndex = i;
+function editTrade(i){
+  let t=trades[i];
+  company.value=t.company;
+  investment.value=t.inv;
+  dividend.value=t.div;
+  buyPrice.value=t.buy;
+  sellPrice.value=t.sell;
+  editIndex=i;
 }
 
 // DELETE
-function deleteTrade(i) {
-  if (confirm("Delete trade?")) {
+function deleteTrade(i){
+  if(confirm("Delete trade?")){
     trades.splice(i,1);
     render();
   }
 }
 
 // CLEAR
-function clearInputs() {
-  company.value = "";
-  investment.value = "";
-  dividend.value = "";
-  buyPrice.value = "";
-  sellPrice.value = "";
-  amountWords.innerText = "";
+function clearInputs(){
+  company.value="";
+  investment.value="";
+  dividend.value="";
+  buyPrice.value="";
+  sellPrice.value="";
+  amountWords.innerText="";
 }
 
 // INIT
