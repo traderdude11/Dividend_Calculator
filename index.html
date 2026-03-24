@@ -115,16 +115,19 @@
 
 <h2 class="section-title">🧮 Advanced Calculators</h2>
 
-<div class="grid">
+<div class="card">
+  <h3>📊 Stock P&L (Advanced)</h3>
 
-  <div class="card">
-    <h3>📊 Stock P&L</h3>
-    <input id="calcBuy" placeholder="Buy Price">
-    <input id="calcSell" placeholder="Sell Price">
-    <input id="calcQty" placeholder="Quantity">
-    <button onclick="calcPL()">Calculate</button>
-    <p id="plResult"></p>
-  </div>
+  <input id="calcBuy" placeholder="Buy Price">
+  <input id="calcSell" placeholder="Sell Price">
+
+  <input id="calcQty" placeholder="Quantity (optional)">
+  <input id="calcInvest" placeholder="Investment ₹ (optional)">
+
+  <button onclick="calcPL()">Run Simulation</button>
+
+  <p id="plResult"></p>
+</div>
 
   <div class="card">
     <h3>📈 Recovery</h3>
@@ -199,10 +202,46 @@ function addTrade(){
 
 /* ===== CALCULATORS ===== */
 
-function calcPL(){
-  let buy=+calcBuy.value, sell=+calcSell.value, qty=+calcQty.value;
-  let p=(sell-buy)*qty;
-  plResult.innerHTML=p>=0?`<span class="profit">₹${p}</span>`:`<span class="loss">₹${p}</span>`;
+function calcPL() {
+  let buy = parseFloat(calcBuy.value);
+  let sell = parseFloat(calcSell.value);
+  let qty = parseFloat(calcQty.value);
+  let invest = parseFloat(calcInvest.value);
+
+  // VALIDATION
+  if (!buy || !sell) {
+    plResult.innerHTML = "Enter Buy & Sell price";
+    return;
+  }
+
+  // LOGIC: PRIORITY
+  // If investment given → calculate qty
+  if (invest && !qty) {
+    qty = invest / buy;
+  }
+
+  // If qty given → calculate investment
+  if (qty && !invest) {
+    invest = qty * buy;
+  }
+
+  // If both missing
+  if (!qty && !invest) {
+    plResult.innerHTML = "Enter Quantity OR Investment";
+    return;
+  }
+
+  // CALCULATIONS
+  let pnl = (sell - buy) * qty;
+  let roi = (pnl / invest) * 100;
+
+  // RESULT UI
+  plResult.innerHTML = `
+    <b>Quantity:</b> ${qty.toFixed(2)} <br>
+    <b>Investment:</b> ₹${invest.toFixed(2)} <br>
+    <b>P&L:</b> <span class="${pnl>=0?'profit':'loss'}">₹${pnl.toFixed(2)}</span><br>
+    <b>ROI:</b> ${roi.toFixed(2)}%
+  `;
 }
 
 function calcRecovery(){
