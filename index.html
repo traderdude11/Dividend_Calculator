@@ -4,8 +4,6 @@
   <title>Dividend Intelligence Pro</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
   <style>
     * { margin:0; padding:0; box-sizing:border-box; }
 
@@ -111,8 +109,7 @@
 <h2 class="section-title">📈 Trades</h2>
 <div id="cards" class="grid"></div>
 
-<h2 class="section-title">📊 Chart</h2>
-<canvas id="chart"></canvas>
+
 
 <!-- ================= CALCULATORS ================= -->
 
@@ -159,11 +156,6 @@ function formatINR(num){
   return "₹" + Number(num).toLocaleString("en-IN");
 }
 
-// CHART
-const chart = new Chart(document.getElementById('chart'), {
-  type:'line',
-  data:{ labels:[], datasets:[{ label:'Profit', data:[] }] }
-});
 
 function render(){
   let totalInv=0,totalProfit=0;
@@ -190,9 +182,7 @@ function render(){
   document.getElementById("totalProfit").innerText=formatINR(totalProfit);
   document.getElementById("totalTrades").innerText=trades.length;
 
-  chart.data.labels=trades.map((_,i)=>i+1);
-  chart.data.datasets[0].data=trades.map(t=>t.inv);
-  chart.update();
+  
 }
 
 function addTrade(){
