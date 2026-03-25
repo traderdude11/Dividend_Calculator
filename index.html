@@ -108,7 +108,7 @@
 
 <h2 class="section-title">📈 Trades</h2>
 <div id="cards" class="grid"></div>
-
+{
 // NUMBER TO WORDS
 function numberToWords(num) {
   if (!num) return "";
@@ -128,11 +128,13 @@ function numberToWords(num) {
   }
 
   return convert(num) + " Rupees";
+      {
 // TAG
 function getTag(yieldPercent) {
   if (yieldPercent > 3) return '<span class="tag high">🔥 High Yield</span>';
   if (yieldPercent > 1.5) return '<span class="tag mid">💎 Good Yield</span>';
   return '<span class="tag low">⚠️ Low Yield</span>';
+      }
 <!-- ================= CALCULATORS ================= -->
 
 <h2 class="section-title">🧮 Advanced Calculators</h2>
