@@ -1,131 +1,392 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Dividend Capture Pro</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dividend Capture Pro+</title>
+
   <style>
     body {
-      font-family: Arial;
-      max-width: 1100px;
-      margin: auto;
-      padding: 20px;
+      font-family: Arial, sans-serif;
       background: #f4f6f9;
+      margin: 0;
+      padding: 20px;
     }
-    h2 {
+
+    h1 {
       text-align: center;
+      color: #222;
     }
+
+    .container {
+      max-width: 1400px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0px 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
     input {
-      width: 100%;
-      padding: 8px;
-      margin: 5px 0;
-    }
-    button {
       padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
       width: 100%;
-      background: #28a745;
+      box-sizing: border-box;
+    }
+
+    button {
+      padding: 12px;
+      background: #007bff;
       color: white;
       border: none;
-      margin-top: 10px;
-      font-size: 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 15px;
     }
+
+    button:hover {
+      background: #0056b3;
+    }
+
+    .summary {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-top: 20px;
+      margin-bottom: 20px;
+    }
+
+    .summary-box {
+      flex: 1;
+      min-width: 220px;
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 8px;
+      border-left: 5px solid #007bff;
+    }
+
     table {
       width: 100%;
-      margin-top: 20px;
       border-collapse: collapse;
+      margin-top: 20px;
       background: white;
+      font-size: 14px;
     }
+
+    th {
+      background: #007bff;
+      color: white;
+      position: sticky;
+      top: 0;
+      z-index: 2;
+    }
+
     th, td {
       border: 1px solid #ddd;
       padding: 8px;
       text-align: center;
     }
-    th {
-      background: #007bff;
-      color: white;
+
+    tr:nth-child(even) {
+      background: #f9f9f9;
     }
-    .profit { color: green; }
-    .loss { color: red; }
-    .summary {
-      margin-top: 20px;
-      padding: 15px;
-      background: white;
+
+    tr:hover {
+      background: #f1f1f1;
+    }
+
+    .profit {
+      color: green;
+      font-weight: bold;
+    }
+
+    .loss {
+      color: red;
+      font-weight: bold;
+    }
+
+    .warn {
+      color: orange;
+      font-weight: bold;
+    }
+
+    .na {
+      color: gray;
+      font-style: italic;
+    }
+
+    .table-wrapper {
+      overflow-x: auto;
     }
   </style>
 </head>
 
 <body>
 
-<h2>📊 Dividend Capture Pro</h2>
+<div class="container">
 
-<input type="date" id="exDate" placeholder="Ex Date">
-<input type="text" id="company" placeholder="Company Name">
-<input type="number" id="investment" placeholder="Investment ₹">
-<input type="number" id="dividend" placeholder="Dividend ₹">
-<input type="number" id="buyPrice" placeholder="Buy Price">
-<input type="number" id="sellPrice" placeholder="Sell Price">
+  <h1>📊 Dividend Capture Pro+</h1>
 
-<button onclick="addTrade()">Add Trade</button>
+  <div class="form-grid">
 
-<table id="table">
-  <tr>
-    <th>Date</th>
-    <th>Company</th>
-    <th>Shares</th>
-    <th>Payout</th>
-    <th>Trading P/L</th>
-    <th>Total P/L</th>
-    <th>Tax</th>
-    <th>Final P/L</th>
-  </tr>
-</table>
+    <input type="date" id="exDate" title="Dividend Ex-Date">
 
-<div class="summary">
-  <h3>📈 Portfolio Summary</h3>
-  <p>Total Investment: ₹<span id="totalInv">0</span></p>
-  <p>Total Profit: ₹<span id="totalProfit">0</span></p>
+    <input type="text" id="company"
+      placeholder="Company Name"
+      title="Enter Company Name">
+
+    <input type="number" id="investment"
+      placeholder="Investment Amount ₹"
+      title="Total investment amount">
+
+    <input type="number" id="dividend"
+      placeholder="Dividend Per Share ₹"
+      title="Dividend declared per share">
+
+    <input type="number" id="buyPrice"
+      placeholder="Buy Price ₹"
+      title="Share price before ex-date">
+
+    <input type="number" id="sellPrice"
+      placeholder="Sell Price ₹ (optional)"
+      title="Share price after ex-date. Leave blank if not sold">
+
+  </div>
+
+  <button onclick="addTrade()">Add Trade</button>
+
+  <div class="summary">
+
+    <div class="summary-box">
+      <h3>Total Investment</h3>
+      <p id="totalInvestment">₹0</p>
+    </div>
+
+    <div class="summary-box">
+      <h3>Total Profit/Loss</h3>
+      <p id="totalPL">₹0</p>
+    </div>
+
+    <div class="summary-box">
+      <h3>Total Trades</h3>
+      <p id="totalTrades">0</p>
+    </div>
+
+  </div>
+
+  <div class="table-wrapper">
+
+    <table id="tradeTable">
+
+      <thead>
+        <tr>
+          <th title="Dividend Ex-Date">Ex Date</th>
+          <th title="Company Name">Company</th>
+          <th title="Investment Amount">Investment</th>
+          <th title="Dividend Per Share">Dividend</th>
+          <th title="Buy Price Before Ex-Date">Buy Price</th>
+          <th title="Sell Price After Ex-Date">Sell Price</th>
+          <th title="Shares Purchased = Investment / Buy Price">Shares</th>
+          <th title="Dividend Payout = Shares × Dividend">Payout</th>
+          <th title="Trading Profit/Loss = Shares × (Sell Price - Buy Price)">
+            Trading P/L
+          </th>
+          <th title="20% STCG on Trading Profit + 30% Tax on Dividend">
+            Tax
+          </th>
+          <th title="Final Profit/Loss after taxes">
+            Final P/L
+          </th>
+          <th title="AI-Based Trade Evaluation">
+            Verdict
+          </th>
+        </tr>
+      </thead>
+
+      <tbody>
+      </tbody>
+
+    </table>
+
+  </div>
+
 </div>
 
 <script>
+
 let totalInvestment = 0;
-let totalProfit = 0;
+let totalProfitLoss = 0;
+let totalTrades = 0;
 
 function addTrade() {
+
   let date = document.getElementById("exDate").value;
   let company = document.getElementById("company").value;
-  let investment = parseFloat(document.getElementById("investment").value);
-  let dividend = parseFloat(document.getElementById("dividend").value);
-  let buyPrice = parseFloat(document.getElementById("buyPrice").value);
-  let sellPrice = parseFloat(document.getElementById("sellPrice").value);
 
-  if (!investment || !buyPrice) return alert("Enter valid inputs");
+  let investment = parseFloat(
+    document.getElementById("investment").value
+  );
 
+  let dividend = parseFloat(
+    document.getElementById("dividend").value
+  );
+
+  let buyPrice = parseFloat(
+    document.getElementById("buyPrice").value
+  );
+
+  let sellPriceInput = document.getElementById("sellPrice").value;
+
+  let sellPrice = sellPriceInput
+    ? parseFloat(sellPriceInput)
+    : null;
+
+  if (!investment || !buyPrice || !dividend) {
+    alert("Please fill all required fields.");
+    return;
+  }
+
+  // SHARES
   let shares = investment / buyPrice;
+
+  // DIVIDEND PAYOUT
   let payout = shares * dividend;
-  let tradingPL = shares * (sellPrice - buyPrice);
-  let totalPL = payout + tradingPL;
-  let tax = totalPL > 0 ? totalPL * 0.2 : 0;
-  let finalPL = totalPL - tax;
 
-  let table = document.getElementById("table");
+  // DEFAULT VALUES
+  let tradingPL = "NA";
+  let totalTax = payout * 0.30;
+  let finalPL = "NA";
+  let verdict = "NA";
+  let verdictClass = "na";
 
-  let row = table.insertRow();
+  // IF SOLD
+  if (sellPrice !== null) {
+
+    // Trading P/L
+    tradingPL = shares * (sellPrice - buyPrice);
+
+    // Taxes
+    let tradingTax =
+      tradingPL > 0 ? tradingPL * 0.20 : 0;
+
+    let dividendTax = payout * 0.30;
+
+    totalTax = tradingTax + dividendTax;
+
+    // Final Profit/Loss
+    finalPL = payout + tradingPL - totalTax;
+
+    // Verdict
+    if (finalPL > 0) {
+      verdict = "Profitable ✅";
+      verdictClass = "profit";
+    }
+    else if (finalPL > -1000) {
+      verdict = "Risky ⚠️";
+      verdictClass = "warn";
+    }
+    else {
+      verdict = "Avoid ❌";
+      verdictClass = "loss";
+    }
+
+    totalProfitLoss += finalPL;
+  }
+
+  // INSERT ROW
+  let tbody = document.querySelector("#tradeTable tbody");
+
+  let row = tbody.insertRow();
+
   row.innerHTML = `
-    <td>${date}</td>
-    <td>${company}</td>
-    <td>${shares.toFixed(0)}</td>
-    <td>₹${payout.toFixed(0)}</td>
-    <td>₹${tradingPL.toFixed(0)}</td>
-    <td>₹${totalPL.toFixed(0)}</td>
-    <td>₹${tax.toFixed(0)}</td>
-    <td class="${finalPL>=0?'profit':'loss'}">₹${finalPL.toFixed(0)}</td>
+
+    <td title="Dividend Ex-Date">${date}</td>
+
+    <td title="Company Name">${company}</td>
+
+    <td title="Investment Amount">
+      ₹${investment.toFixed(0)}
+    </td>
+
+    <td title="Dividend Per Share">
+      ₹${dividend.toFixed(2)}
+    </td>
+
+    <td title="Buy Price Before Ex-Date">
+      ₹${buyPrice.toFixed(2)}
+    </td>
+
+    <td title="Sell Price After Ex-Date">
+      ${sellPrice !== null
+        ? "₹" + sellPrice.toFixed(2)
+        : "<span class='na'>NA</span>"}
+    </td>
+
+    <td title="Shares Purchased = Investment / Buy Price">
+      ${shares.toFixed(0)}
+    </td>
+
+    <td title="Dividend Payout = Shares × Dividend">
+      ₹${payout.toFixed(0)}
+    </td>
+
+    <td title="Trading P/L = Shares × (Sell - Buy)">
+      ${tradingPL === "NA"
+        ? "<span class='na'>NA</span>"
+        : "₹" + tradingPL.toFixed(0)}
+    </td>
+
+    <td title="Tax = 20% Trading Profit Tax + 30% Dividend Tax">
+      ₹${totalTax.toFixed(0)}
+    </td>
+
+    <td title="Final Profit/Loss After Taxes"
+      class="${finalPL !== "NA"
+        ? (finalPL >= 0 ? "profit" : "loss")
+        : "na"}">
+
+      ${finalPL === "NA"
+        ? "NA"
+        : "₹" + finalPL.toFixed(0)}
+
+    </td>
+
+    <td title="AI-Based Trade Evaluation"
+      class="${verdictClass}">
+      ${verdict}
+    </td>
+
   `;
 
+  // UPDATE SUMMARY
   totalInvestment += investment;
-  totalProfit += finalPL;
+  totalTrades++;
 
-  document.getElementById("totalInv").innerText = totalInvestment.toFixed(0);
-  document.getElementById("totalProfit").innerText = totalProfit.toFixed(0);
+  document.getElementById("totalInvestment").innerText =
+    "₹" + totalInvestment.toFixed(0);
+
+  document.getElementById("totalPL").innerText =
+    "₹" + totalProfitLoss.toFixed(0);
+
+  document.getElementById("totalTrades").innerText =
+    totalTrades;
+
+  // CLEAR INPUTS
+  document.getElementById("company").value = "";
+  document.getElementById("investment").value = "";
+  document.getElementById("dividend").value = "";
+  document.getElementById("buyPrice").value = "";
+  document.getElementById("sellPrice").value = "";
 }
+
 </script>
 
 </body>
